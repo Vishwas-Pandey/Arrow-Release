@@ -19,6 +19,12 @@ namespace ReleaseTheArrow.Gameplay
         private Action<int> _onTapped;
         private bool _interactable;
 
+        // Bumped by Bind() and Invalidate(). Any in-flight tween captures this value and checks
+        // it before acting in its completion callback — since this instance is pooled and
+        // rebound rather than destroyed, a tween started under a previous binding must never be
+        // allowed to mutate or complete against whatever this view has since been rebound to.
+        private int _generation;
+
         public static ArrowView CreateInstance(Transform parent)
         {
             var go = new GameObject("Arrow", typeof(RectTransform), typeof(Image));
@@ -33,6 +39,7 @@ namespace ReleaseTheArrow.Gameplay
 
         public void Bind(ArrowSpec spec, float cellSize, Action<int> onTapped)
         {
+            _generation++;
             ArrowId = spec.id;
             _onTapped = onTapped;
 
@@ -51,6 +58,12 @@ namespace ReleaseTheArrow.Gameplay
         }
 
         public void Deactivate() => gameObject.SetActive(false);
+
+        /// Invalidates any tween currently in flight against this view without changing its
+        /// binding. Call this whenever a view is force-released (e.g. clearing the board for a
+        /// restart) so a stale release/blocked animation from the previous level can never fire
+        /// its completion callback against whatever this pooled instance is reused for next.
+        public void Invalidate() => _generation++;
 
         private static float RotationFor(ArrowDirection direction) => direction switch
         {
@@ -76,10 +89,12 @@ namespace ReleaseTheArrow.Gameplay
         public void PlayReleaseAndDeactivate(Vector2 exitAnchoredPosition, Action onComplete)
         {
             _interactable = false;
+            int gen = _generation;
             _image.color = Theme.ArrowReleasedGlow;
             Tween.Scale(_rect, Vector3.one * 1.12f, 0.06f, Ease.OutQuad);
             Tween.AnchoredPosition(_rect, exitAnchoredPosition, 0.26f, Ease.InQuad, () =>
             {
+                if (gen != _generation) return; // recycled for a different arrow mid-animation
                 gameObject.SetActive(false);
                 onComplete?.Invoke();
             });
@@ -87,10 +102,12 @@ namespace ReleaseTheArrow.Gameplay
 
         public void PlayBlockedShake()
         {
+            int gen = _generation;
             Tween.Scale(_rect, Vector3.one, 0.08f, Ease.OutQuad);
             _image.color = Theme.ArrowBlockedFlash;
             Tween.Shake(_rect, 10f, 0.26f, () =>
             {
+                if (gen != _generation) return;
                 if (_image != null) _image.color = Theme.ArrowNormal;
             });
         }

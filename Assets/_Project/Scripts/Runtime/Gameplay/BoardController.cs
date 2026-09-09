@@ -17,8 +17,8 @@ namespace ReleaseTheArrow.Gameplay
         private const float MinCellSize = 90f;
         private const float MaxCellSize = 180f;
 
-        [SerializeField] private RectTransform viewport;
-        [SerializeField] private RectTransform content;
+        private RectTransform viewport;
+        private RectTransform content;
 
         private ObjectPool<ArrowView> _arrowPool;
         private readonly Dictionary<int, ArrowView> _activeViews = new Dictionary<int, ArrowView>();
@@ -29,8 +29,12 @@ namespace ReleaseTheArrow.Gameplay
         private int _width;
         private int _height;
 
-        private void Awake()
+        /// Everything here is built procedurally rather than wired up in a hand-authored scene,
+        /// so the viewport/content rects are supplied by the code that constructed this object.
+        public void Initialize(RectTransform viewportRect, RectTransform contentRect)
         {
+            viewport = viewportRect;
+            content = contentRect;
             _arrowPool = new ObjectPool<ArrowView>(() => ArrowView.CreateInstance(content), prewarm: 32);
             _cellPool = new ObjectPool<Image>(CreateCellBackground, prewarm: 32);
         }
@@ -141,7 +145,13 @@ namespace ReleaseTheArrow.Gameplay
 
         private void ClearBoard()
         {
-            foreach (var view in _activeViews.Values) _arrowPool.Release(view);
+            foreach (var view in _activeViews.Values)
+            {
+                // A view mid release/blocked animation must not let that stale tween's
+                // completion callback fire against whatever this pooled instance becomes next.
+                view.Invalidate();
+                _arrowPool.Release(view);
+            }
             _activeViews.Clear();
 
             foreach (var cell in _cellBackgrounds) _cellPool.Release(cell);

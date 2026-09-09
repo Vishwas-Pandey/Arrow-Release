@@ -28,6 +28,9 @@ Recordings/
 .DS_Store?
 ._*
 
+# Local Claude Code session state
+.claude/
+
 # Signing / secrets — NEVER commit these
 keystore/
 *.keystore

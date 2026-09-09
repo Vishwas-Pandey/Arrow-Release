@@ -66,22 +66,33 @@ namespace ReleaseTheArrow.Core
                 return;
             }
 
-            var layout = LevelGenerator.Generate(SaveData.inProgress.levelId);
-            var session = LevelSession.Restore(
-                layout,
-                SaveData.inProgress.removedArrowIds,
-                SaveData.inProgress.lives,
-                SaveData.inProgress.continuesUsed);
-            AttachSession(session);
-
-            State = session.State switch
+            try
             {
-                LevelSessionState.GameOverAwaitingContinue => AppState.GameOver,
-                LevelSessionState.GameOverFinal => AppState.GameOver,
-                LevelSessionState.Complete => AppState.LevelComplete,
-                _ => AppState.Playing
-            };
-            StateChanged?.Invoke(State);
+                var layout = LevelGenerator.Generate(SaveData.inProgress.levelId);
+                var session = LevelSession.Restore(
+                    layout,
+                    SaveData.inProgress.removedArrowIds,
+                    SaveData.inProgress.lives,
+                    SaveData.inProgress.continuesUsed);
+                AttachSession(session);
+
+                State = session.State switch
+                {
+                    LevelSessionState.GameOverAwaitingContinue => AppState.GameOver,
+                    LevelSessionState.GameOverFinal => AppState.GameOver,
+                    LevelSessionState.Complete => AppState.LevelComplete,
+                    _ => AppState.Playing
+                };
+                StateChanged?.Invoke(State);
+            }
+            catch (Exception e)
+            {
+                // A saved in-progress attempt can never be allowed to break the Play button —
+                // drop it and start fresh rather than crash or get stuck.
+                Debug.LogError($"[GameManager] Could not restore saved level {SaveData.inProgress.levelId}, starting fresh instead. {e.Message}");
+                SaveSystem.ClearInProgress(SaveData);
+                StartLevel(SaveData.highestUnlockedLevel);
+            }
         }
 
         public void RestartLevel()
@@ -98,7 +109,9 @@ namespace ReleaseTheArrow.Core
         {
             if (CurrentSession == null) return TapResult.Ignored;
             var result = CurrentSession.Tap(arrowId);
-            PersistInProgress();
+            // A completing tap already ran OnLevelCompleted, which clears the in-progress save
+            // for this (now finished) level — persisting again here would resurrect it.
+            if (CurrentSession.State != LevelSessionState.Complete) PersistInProgress();
             return result;
         }
 

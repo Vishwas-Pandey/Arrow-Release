@@ -26,6 +26,15 @@ namespace ReleaseTheArrow.Save
                     var data = JsonUtility.FromJson<SaveData>(json);
                     if (data != null)
                     {
+                        if (data.version != SaveData.CurrentVersion)
+                        {
+                            // Puzzle generation/format may have changed since this was written —
+                            // keep level progress, but don't risk replaying an in-progress attempt
+                            // against logic that could now produce a different layout for it.
+                            data.hasInProgress = false;
+                            data.inProgress = new InProgressLevelState();
+                            data.version = SaveData.CurrentVersion;
+                        }
                         _cache = data;
                         return _cache;
                     }
@@ -48,8 +57,25 @@ namespace ReleaseTheArrow.Save
                 string json = JsonUtility.ToJson(data, prettyPrint: false);
                 File.WriteAllText(TempPath, json);
 
-                if (File.Exists(SavePath)) File.Delete(SavePath);
-                File.Move(TempPath, SavePath);
+                if (!File.Exists(SavePath))
+                {
+                    File.Move(TempPath, SavePath);
+                    return;
+                }
+
+                try
+                {
+                    // File.Replace performs a single atomic rename at the OS level — there is no
+                    // window where neither file exists, unlike delete-then-move.
+                    File.Replace(TempPath, SavePath, null);
+                }
+                catch (Exception)
+                {
+                    // Rare fallback for platforms/cases where Replace isn't available. Not
+                    // atomic, but only reached if the atomic path itself failed.
+                    File.Delete(SavePath);
+                    File.Move(TempPath, SavePath);
+                }
             }
             catch (Exception e)
             {
