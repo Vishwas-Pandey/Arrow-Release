@@ -1,0 +1,43 @@
+# Unity generated
+Library/
+Temp/
+Logs/
+obj/
+Build/
+Builds/
+UserSettings/
+MemoryCaptures/
+Recordings/
+*.tmp
+
+# Rider / VS / VSCode
+.idea/
+.vs/
+.vscode/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+
+# Signing / secrets — NEVER commit these
+keystore/
+*.keystore
+*.jks
+*.p12
+**/keystore.properties
+**/*.env
+.env
+.env.*
+AdMobConfig.local.json
+
+# Unity Asmdef obj cache
+*.pidb.meta
