@@ -41,12 +41,16 @@ namespace ReleaseTheArrow.Gameplay
             ArrowId = spec.id;
             _onTapped = onTapped;
 
-            // Deliberately taller than the cell it sits in (not a uniform square) — the shaft
-            // overflows into the neighboring cell so a crowded board reads as long tangled lines
-            // crossing between cells, rather than a grid of same-size boxed icons.
+            // Fitted to its own cell rather than overflowing into the next one. Overflow made
+            // sense back when boards had empty gaps between arrows (nothing to collide with),
+            // but every board is now 100% full — an overflowing arrow overlaps its neighbor's
+            // arrow directly, and two overlapping same-direction arrows visually fuse into what
+            // reads as one long, ambiguous shape (this is what was actually behind reports of
+            // arrows "pointing the wrong way": the direction logic was correct, but adjacent
+            // cells' glyphs were visually indistinguishable from each other).
             _rect.anchorMin = _rect.anchorMax = new Vector2(0f, 0f);
             _rect.pivot = new Vector2(0.5f, 0.5f);
-            _rect.sizeDelta = new Vector2(cellSize * 0.52f, cellSize * 1.28f);
+            _rect.sizeDelta = new Vector2(cellSize * 0.80f, cellSize * 0.94f);
             _rect.anchoredPosition = new Vector2(
                 spec.col * cellSize + cellSize * 0.5f,
                 spec.row * cellSize + cellSize * 0.5f);
