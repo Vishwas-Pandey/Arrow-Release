@@ -76,9 +76,11 @@ namespace ReleaseTheArrow.Core
             var contentGo = new GameObject("BoardContent", typeof(RectTransform));
             var contentRect = (RectTransform)contentGo.transform;
             contentRect.SetParent(scrollRect, false);
-            contentRect.anchorMin = new Vector2(0.5f, 1f);
-            contentRect.anchorMax = new Vector2(0.5f, 1f);
-            contentRect.pivot = new Vector2(0.5f, 1f);
+            // Centered rather than top-anchored, so the board sits in the middle of the play
+            // area (between the HUD and the bottom of the screen) instead of hugging the top.
+            contentRect.anchorMin = new Vector2(0.5f, 0.5f);
+            contentRect.anchorMax = new Vector2(0.5f, 0.5f);
+            contentRect.pivot = new Vector2(0.5f, 0.5f);
 
             var scroll = scrollGo.GetComponent<ScrollRect>();
             scroll.horizontal = true;

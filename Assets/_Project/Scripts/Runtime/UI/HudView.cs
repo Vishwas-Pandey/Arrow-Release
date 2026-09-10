@@ -25,7 +25,10 @@ namespace ReleaseTheArrow.UI
             rect.pivot = new Vector2(0.5f, 1f);
             rect.sizeDelta = new Vector2(0f, 160f);
 
-            go.AddComponent<SafeAreaFitter>();
+            // SafeAreaFitter is meant for a full-stretch (0,0)-(1,1) root — applied here (as it
+            // was before) it overwrote this strip's top-anchored (0,1)-(1,1) anchors with the
+            // device's raw safe-area rect, which is why the HUD was rendering mid-screen instead
+            // of pinned to the top. Just don't use it on a strip that already has its own anchors.
 
             var hud = go.AddComponent<HudView>();
             hud.Build(rect);
@@ -60,6 +63,10 @@ namespace ReleaseTheArrow.UI
             for (int i = 0; i < _hearts.Length; i++)
             {
                 _hearts[i] = UIFactory.CreateIcon(heartsRect, IconSpriteFactory.Heart(), new Vector2(56, 56), Theme.HeartFull);
+                // IconSpriteFactory's rasterization renders the heart glyph upside down (point at
+                // top, lobes at bottom) — same root cause as the arrow sprite flip, fixed here the
+                // same targeted way rather than touching the shared rasterization code.
+                _hearts[i].rectTransform.localEulerAngles = new Vector3(0f, 0f, 180f);
             }
         }
 
