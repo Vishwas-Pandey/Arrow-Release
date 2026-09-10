@@ -16,6 +16,7 @@ namespace ReleaseTheArrow.UI
         public static Sprite Lock() => GetOrBuild("lock", IsInsideLock);
         public static Sprite Check() => GetOrBuild("check", IsInsideCheck);
         public static Sprite Pause() => GetOrBuild("pause", IsInsidePause);
+        public static Sprite Dot() => GetOrBuild("dot", IsInsideDot);
 
         private static Sprite GetOrBuild(string key, System.Func<float, float, bool> shape)
         {
@@ -82,6 +83,10 @@ namespace ReleaseTheArrow.UI
             if (x >= -0.28f && x <= -0.08f && y >= -0.32f && y <= 0.32f) return true;
             return x >= 0.08f && x <= 0.28f && y >= -0.32f && y <= 0.32f;
         }
+
+        /// The board's resting grid marker — every cell shows one, arrows sit on top of it, and
+        /// it's what's left once an arrow is released, per the "matrix of dots" board look.
+        private static bool IsInsideDot(float x, float y) => InCircle(x, y, 0f, 0f, 0.34f);
 
         private static bool InCircle(float x, float y, float cx, float cy, float r) => (x - cx) * (x - cx) + (y - cy) * (y - cy) <= r * r;
 

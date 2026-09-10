@@ -65,12 +65,16 @@ namespace ReleaseTheArrow.Gameplay
         /// its completion callback against whatever this pooled instance is reused for next.
         public void Invalidate() => _generation++;
 
+        // Unity's UI Z-rotation renders clockwise on screen, not the mathematical CCW convention
+        // the naive formula assumes — confirmed empirically (an arrow visually facing left was
+        // actually direction.Right internally, and got blocked by an obstacle to its own right).
+        // Right/Left are the swapped pair; Up/Down are their own mirror so they were unaffected.
         private static float RotationFor(ArrowDirection direction) => direction switch
         {
             ArrowDirection.Up => 0f,
-            ArrowDirection.Right => -90f,
+            ArrowDirection.Right => 90f,
             ArrowDirection.Down => 180f,
-            ArrowDirection.Left => 90f,
+            ArrowDirection.Left => -90f,
             _ => 0f
         };
 

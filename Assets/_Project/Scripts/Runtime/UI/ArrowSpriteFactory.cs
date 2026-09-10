@@ -60,19 +60,26 @@ namespace ReleaseTheArrow.UI
 
         private static bool IsInsideArrow(float x, float y)
         {
-            // Triangular head.
-            if (PointInTriangle(x, y, 0f, 0.40f, -0.32f, 0.02f, 0.32f, 0.02f)) return true;
-            // Rectangular shaft, slightly rounded at the bottom corners.
-            if (x >= -0.115f && x <= 0.115f && y >= -0.40f && y <= 0.06f)
+            // A sleek, elongated line with a sharp arrowhead — thinner and longer than a boxy
+            // icon so a crowded board reads as tangled "wires" rather than a grid of tiles.
+            const float headTipY = 0.46f;
+            const float headBaseY = 0.10f;
+            const float headHalfWidth = 0.19f;
+            if (PointInTriangle(x, y, 0f, headTipY, -headHalfWidth, headBaseY, headHalfWidth, headBaseY)) return true;
+
+            const float shaftHalfWidth = 0.065f;
+            const float shaftTop = headBaseY + 0.02f;
+            const float shaftBottom = -0.46f;
+            if (x >= -shaftHalfWidth && x <= shaftHalfWidth && y >= shaftBottom && y <= shaftTop)
             {
-                float cornerRadius = 0.05f;
-                bool nearBottom = y < -0.40f + cornerRadius;
+                const float cornerRadius = 0.035f;
+                bool nearBottom = y < shaftBottom + cornerRadius;
                 if (!nearBottom) return true;
 
-                float cx = Mathf.Sign(x) * (0.115f - cornerRadius);
-                if (Mathf.Abs(x) < 0.115f - cornerRadius) return true;
+                float cx = Mathf.Sign(x) * (shaftHalfWidth - cornerRadius);
+                if (Mathf.Abs(x) < shaftHalfWidth - cornerRadius) return true;
                 float dx = x - cx;
-                float dy = y - (-0.40f + cornerRadius);
+                float dy = y - (shaftBottom + cornerRadius);
                 return dx * dx + dy * dy <= cornerRadius * cornerRadius;
             }
             return false;

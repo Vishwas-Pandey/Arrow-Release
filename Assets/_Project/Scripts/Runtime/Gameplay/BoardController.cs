@@ -65,6 +65,8 @@ namespace ReleaseTheArrow.Gameplay
             return Mathf.Clamp(size, MinCellSize, MaxCellSize);
         }
 
+        /// One small dot per grid cell rather than a solid colored tile — arrows render directly
+        /// on top with no box behind them, and a dot is what's left once its arrow is released.
         private void SpawnGridBackground()
         {
             for (int c = 0; c < _width; c++)
@@ -75,7 +77,7 @@ namespace ReleaseTheArrow.Gameplay
                     var rect = (RectTransform)cell.transform;
                     rect.anchorMin = rect.anchorMax = Vector2.zero;
                     rect.pivot = new Vector2(0.5f, 0.5f);
-                    rect.sizeDelta = new Vector2(_cellSize * 0.94f, _cellSize * 0.94f);
+                    rect.sizeDelta = new Vector2(_cellSize * 0.16f, _cellSize * 0.16f);
                     rect.anchoredPosition = new Vector2(c * _cellSize + _cellSize * 0.5f, r * _cellSize + _cellSize * 0.5f);
                     _cellBackgrounds.Add(cell);
                 }
@@ -87,7 +89,8 @@ namespace ReleaseTheArrow.Gameplay
             var go = new GameObject("Cell", typeof(RectTransform), typeof(Image));
             go.transform.SetParent(content, false);
             var image = go.GetComponent<Image>();
-            image.color = Theme.CellEmpty;
+            image.sprite = IconSpriteFactory.Dot();
+            image.color = Theme.GridDot;
             image.raycastTarget = false;
             return image;
         }

@@ -11,6 +11,7 @@ namespace ReleaseTheArrow.UI
 
         public static readonly Color CellEmpty = new Color32(0x24, 0x29, 0x48, 0x66);
         public static readonly Color CellEmptyBorder = new Color32(0x35, 0x3B, 0x63, 0xFF);
+        public static readonly Color GridDot = new Color32(0x40, 0x47, 0x74, 0xFF);
 
         public static readonly Color ArrowNormal = new Color32(0x53, 0xD3, 0xE0, 0xFF);      // teal/cyan
         public static readonly Color ArrowNormalShadow = new Color32(0x2B, 0x8E, 0x9E, 0xFF);
