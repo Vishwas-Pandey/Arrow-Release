@@ -44,3 +44,6 @@ AdMobConfig.local.json
 
 # Unity Asmdef obj cache
 *.pidb.meta
+
+# Unity Android build cache
+.utmp/
