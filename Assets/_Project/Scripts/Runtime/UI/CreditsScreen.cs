@@ -27,6 +27,7 @@ namespace ReleaseTheArrow.UI
             var bodyRect = (RectTransform)bodyGo.transform;
             bodyRect.SetParent(panel, false);
             bodyRect.sizeDelta = new Vector2(600, 320);
+            UIFactory.SetPreferredSize(bodyGo, bodyRect.sizeDelta);
             UIFactory.CreateText(bodyRect, "RELEASE THE ARROW\n\nDeveloped and published by\nVirevia\n\nThank you for playing!",
                 34, Theme.TextSecondary, TextAnchor.MiddleCenter);
 

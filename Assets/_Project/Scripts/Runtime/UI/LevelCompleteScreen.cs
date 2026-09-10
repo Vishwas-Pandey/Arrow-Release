@@ -27,6 +27,7 @@ namespace ReleaseTheArrow.UI
             var subRect = (RectTransform)subGo.transform;
             subRect.SetParent(panel, false);
             subRect.sizeDelta = new Vector2(560, 90);
+            UIFactory.SetPreferredSize(subGo, subRect.sizeDelta);
             UIFactory.CreateText(subRect, "Great job!", 40, Theme.Success);
 
             UIFactory.CreateButton(panel, "NEXT LEVEL", new Vector2(560, 120), Theme.AccentPrimary, Color.black, () => NextLevelRequested?.Invoke(), 44);

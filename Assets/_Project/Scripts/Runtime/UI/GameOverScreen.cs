@@ -38,12 +38,14 @@ namespace ReleaseTheArrow.UI
             var titleRect = (RectTransform)titleGo.transform;
             titleRect.SetParent(panel, false);
             titleRect.sizeDelta = new Vector2(600, 110);
+            UIFactory.SetPreferredSize(titleGo, titleRect.sizeDelta);
             _title = UIFactory.CreateText(titleRect, "GAME OVER", 56, Theme.Danger, TextAnchor.MiddleCenter, FontStyle.Bold);
 
             _watchAdRoot = new GameObject("WatchAdGroup", typeof(RectTransform));
             var watchAdRect = (RectTransform)_watchAdRoot.transform;
             watchAdRect.SetParent(panel, false);
             watchAdRect.sizeDelta = new Vector2(620, 220);
+            UIFactory.SetPreferredSize(_watchAdRoot, watchAdRect.sizeDelta);
             UIFactory.AddVerticalLayout(_watchAdRoot, spacing: 14);
 
             _watchAdButton = UIFactory.CreateButton(watchAdRect, "WATCH AD\n+1 LIFE", new Vector2(560, 130), Theme.AccentSecondary, Color.black, OnWatchAdClicked, 34);
@@ -53,6 +55,7 @@ namespace ReleaseTheArrow.UI
             var statusRect = (RectTransform)statusGo.transform;
             statusRect.SetParent(watchAdRect, false);
             statusRect.sizeDelta = new Vector2(560, 60);
+            UIFactory.SetPreferredSize(statusGo, statusRect.sizeDelta);
             _statusText = UIFactory.CreateText(statusRect, "", 28, Theme.TextSecondary);
 
             UIFactory.CreateButton(panel, "RESTART LEVEL", new Vector2(560, 110), Theme.ButtonBackground, Theme.TextPrimary, () => RestartRequested?.Invoke(), 38);

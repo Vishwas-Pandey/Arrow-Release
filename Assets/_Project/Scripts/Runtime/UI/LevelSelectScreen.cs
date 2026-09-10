@@ -18,6 +18,7 @@ namespace ReleaseTheArrow.UI
         public event Action<int> LevelChosen;
 
         private RectTransform _gridContainer;
+        private ScrollRect _scrollRect;
         private Text _pageLabel;
         private Button _prevButton, _nextButton;
         private int _currentPage;
@@ -57,20 +58,44 @@ namespace ReleaseTheArrow.UI
             titleRect.sizeDelta = new Vector2(600, 100);
             UIFactory.CreateText(titleRect, "SELECT LEVEL", 46, Theme.TextPrimary, TextAnchor.MiddleCenter, FontStyle.Bold);
 
-            var gridGo = new GameObject("Grid", typeof(RectTransform), typeof(GridLayoutGroup));
+            // 50 levels at 5 columns is 10 rows, taller than the space between header and footer
+            // allows — a plain GridLayoutGroup would overflow and overlap the pagination footer.
+            // Scrolling (rather than shrinking cells further or fewer levels/page) keeps tap
+            // targets full-size.
+            var scrollGo = new GameObject("LevelScrollView", typeof(RectTransform), typeof(RectMask2D));
+            var scrollRectTransform = (RectTransform)scrollGo.transform;
+            scrollRectTransform.SetParent(rect, false);
+            scrollRectTransform.anchorMin = new Vector2(0f, 0f);
+            scrollRectTransform.anchorMax = new Vector2(1f, 1f);
+            scrollRectTransform.offsetMin = new Vector2(40f, 190f);
+            scrollRectTransform.offsetMax = new Vector2(-40f, -210f);
+
+            _scrollRect = scrollGo.AddComponent<ScrollRect>();
+            _scrollRect.horizontal = false;
+            _scrollRect.vertical = true;
+            _scrollRect.movementType = ScrollRect.MovementType.Clamped;
+
+            var gridGo = new GameObject("Grid", typeof(RectTransform), typeof(GridLayoutGroup), typeof(ContentSizeFitter));
             _gridContainer = (RectTransform)gridGo.transform;
-            _gridContainer.SetParent(rect, false);
-            _gridContainer.anchorMin = new Vector2(0.5f, 0.5f);
-            _gridContainer.anchorMax = new Vector2(0.5f, 0.5f);
-            _gridContainer.anchoredPosition = new Vector2(0f, -40f);
-            _gridContainer.sizeDelta = new Vector2(980, 1400);
+            _gridContainer.SetParent(scrollRectTransform, false);
+            _gridContainer.anchorMin = new Vector2(0.5f, 1f);
+            _gridContainer.anchorMax = new Vector2(0.5f, 1f);
+            _gridContainer.pivot = new Vector2(0.5f, 1f);
+            _gridContainer.sizeDelta = new Vector2(940, 0f);
+
+            var fitter = gridGo.GetComponent<ContentSizeFitter>();
+            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             var grid = gridGo.GetComponent<GridLayoutGroup>();
             grid.cellSize = new Vector2(168, 168);
             grid.spacing = new Vector2(20, 20);
+            grid.padding = new RectOffset(0, 0, 10, 10);
             grid.childAlignment = TextAnchor.UpperCenter;
             grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
             grid.constraintCount = Columns;
+
+            _scrollRect.content = _gridContainer;
 
             var footer = new GameObject("Footer", typeof(RectTransform));
             var footerRect = (RectTransform)footer.transform;
@@ -88,6 +113,7 @@ namespace ReleaseTheArrow.UI
             var pageLabelRect = (RectTransform)pageLabelGo.transform;
             pageLabelRect.SetParent(footerRect, false);
             pageLabelRect.sizeDelta = new Vector2(320, 100);
+            UIFactory.SetPreferredSize(pageLabelGo, pageLabelRect.sizeDelta);
             _pageLabel = UIFactory.CreateText(pageLabelRect, "1-50", 34, Theme.TextSecondary);
 
             _nextButton = UIFactory.CreateButton(footerRect, "NEXT >", new Vector2(260, 100), Theme.ButtonBackground, Theme.TextPrimary, () => ChangePage(1), 32);
@@ -123,6 +149,8 @@ namespace ReleaseTheArrow.UI
             {
                 _spawned.Add(BuildLevelButton(level));
             }
+
+            _scrollRect.verticalNormalizedPosition = 1f;
         }
 
         private GameObject BuildLevelButton(int level)

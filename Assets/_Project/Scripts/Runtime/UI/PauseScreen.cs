@@ -43,6 +43,7 @@ namespace ReleaseTheArrow.UI
             var rect = (RectTransform)go.transform;
             rect.SetParent(parent, false);
             rect.sizeDelta = new Vector2(560, 110);
+            UIFactory.SetPreferredSize(go, rect.sizeDelta);
             UIFactory.CreateText(rect, label, fontSize, Theme.TextPrimary, TextAnchor.MiddleCenter, FontStyle.Bold);
         }
     }

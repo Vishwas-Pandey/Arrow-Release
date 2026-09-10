@@ -57,6 +57,16 @@ namespace ReleaseTheArrow.UI
             return rect;
         }
 
+        /// LayoutGroups size children via ILayoutElement, not RectTransform.sizeDelta — anything
+        /// placed inside one needs this, or it collapses to zero size and overlaps its siblings.
+        public static LayoutElement SetPreferredSize(GameObject go, Vector2 size)
+        {
+            var layoutElement = go.GetComponent<LayoutElement>() ?? go.AddComponent<LayoutElement>();
+            layoutElement.preferredWidth = size.x;
+            layoutElement.preferredHeight = size.y;
+            return layoutElement;
+        }
+
         public static Text CreateText(Transform parent, string content, int fontSize, Color color,
             TextAnchor alignment = TextAnchor.MiddleCenter, FontStyle style = FontStyle.Normal)
         {
@@ -86,6 +96,7 @@ namespace ReleaseTheArrow.UI
             var rect = (RectTransform)go.transform;
             rect.SetParent(parent, false);
             rect.sizeDelta = size;
+            SetPreferredSize(go, size);
 
             var image = go.GetComponent<Image>();
             image.color = bgColor;
@@ -111,6 +122,7 @@ namespace ReleaseTheArrow.UI
             var rect = (RectTransform)go.transform;
             rect.SetParent(parent, false);
             rect.sizeDelta = buttonSize;
+            SetPreferredSize(go, buttonSize);
 
             var image = go.GetComponent<Image>();
             image.color = bgColor;
@@ -136,6 +148,7 @@ namespace ReleaseTheArrow.UI
             var rect = (RectTransform)go.transform;
             rect.SetParent(parent, false);
             rect.sizeDelta = size;
+            SetPreferredSize(go, size);
             var image = go.GetComponent<Image>();
             image.sprite = sprite;
             image.color = color;

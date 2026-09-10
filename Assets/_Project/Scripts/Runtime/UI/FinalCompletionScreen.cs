@@ -28,6 +28,7 @@ namespace ReleaseTheArrow.UI
             var subRect = (RectTransform)subGo.transform;
             subRect.SetParent(panel, false);
             subRect.sizeDelta = new Vector2(660, 120);
+            UIFactory.SetPreferredSize(subGo, subRect.sizeDelta);
             UIFactory.CreateText(subRect, "YOU COMPLETED\nALL 1500 LEVELS!", 40, Theme.AccentPrimary, TextAnchor.MiddleCenter, FontStyle.Bold);
 
             UIFactory.CreateButton(panel, "PLAY AGAIN", new Vector2(600, 110), Theme.AccentPrimary, Color.black, () => PlayAgainRequested?.Invoke(), 40);
