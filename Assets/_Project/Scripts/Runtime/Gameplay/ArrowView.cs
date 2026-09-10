@@ -43,9 +43,12 @@ namespace ReleaseTheArrow.Gameplay
             ArrowId = spec.id;
             _onTapped = onTapped;
 
+            // Deliberately taller than the cell it sits in (not a uniform square) — the shaft
+            // overflows into the neighboring cell so a crowded board reads as long tangled lines
+            // crossing between cells, rather than a grid of same-size boxed icons.
             _rect.anchorMin = _rect.anchorMax = new Vector2(0f, 0f);
             _rect.pivot = new Vector2(0.5f, 0.5f);
-            _rect.sizeDelta = new Vector2(cellSize * 0.82f, cellSize * 0.82f);
+            _rect.sizeDelta = new Vector2(cellSize * 0.52f, cellSize * 1.28f);
             _rect.anchoredPosition = new Vector2(
                 spec.col * cellSize + cellSize * 0.5f,
                 spec.row * cellSize + cellSize * 0.5f);
@@ -65,15 +68,20 @@ namespace ReleaseTheArrow.Gameplay
         /// its completion callback against whatever this pooled instance is reused for next.
         public void Invalidate() => _generation++;
 
-        // Unity's UI Z-rotation renders clockwise on screen, not the mathematical CCW convention
-        // the naive formula assumes — confirmed empirically (an arrow visually facing left was
-        // actually direction.Right internally, and got blocked by an obstacle to its own right).
-        // Right/Left are the swapped pair; Up/Down are their own mirror so they were unaffected.
+        // These four values are deliberately reverse-engineered from on-device behavior, not
+        // derived from rotation-convention math — a previous "fix" here assumed Up/Down were
+        // untouched by the Unity rotation-direction issue (a 180-degree flip is direction-
+        // agnostic), but that missed a SECOND, independent bug: ArrowSpriteFactory's coverage
+        // sampling flips the base "Up" texture vertically, so the unrotated glyph actually
+        // renders pointing down. Confirmed empirically on-device: an arrow rendered pointing up
+        // at the board's top row (nothing above it — must release if truly Up) instead flashed
+        // blocked, matching an obstruction further down its column, proving its real direction
+        // was Down. Right/Left were separately confirmed correct and are unchanged.
         private static float RotationFor(ArrowDirection direction) => direction switch
         {
-            ArrowDirection.Up => 0f,
+            ArrowDirection.Up => 180f,
             ArrowDirection.Right => 90f,
-            ArrowDirection.Down => 180f,
+            ArrowDirection.Down => 0f,
             ArrowDirection.Left => -90f,
             _ => 0f
         };

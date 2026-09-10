@@ -16,23 +16,33 @@ namespace ReleaseTheArrow.Generation
     /// PuzzleSolver is still run afterwards as an independent safety-net check, per spec.
     public static class LevelGenerator
     {
-        private const int MaxConstructionAttempts = 30;
-        private const int MinBoardDim = 4;
-        private const int MaxBoardWidth = 10;
-        private const int MaxBoardHeight = 40;
+        private const int MaxConstructionAttempts = 60;
         private const int CandidateSampleSize = 28;
+        private const int MinArrowCount = 6;
+        /// However crowded the difficulty curve wants a level to be, never fill every last cell —
+        /// leaves the construction algorithm enough breathing room to always find a valid spot.
+        private const float MaxFillFraction = 0.88f;
 
         public static LevelLayout Generate(int levelId)
         {
+            int size = DifficultyCurve.BoardSizeForLevel(levelId);
+            int width = size, height = size;
+            int maxByFill = (int)(width * height * MaxFillFraction);
+
             for (int attempt = 0; attempt < MaxConstructionAttempts; attempt++)
             {
                 int seed = unchecked((int)((uint)levelId * 2654435761u) + attempt);
                 var rng = new DeterministicRandom(seed);
                 var profile = DifficultyCurve.GetProfile(levelId, rng);
 
-                (int width, int height) = ChooseBoardSize(profile, rng);
+                // A small capped board at very high constrainedness can't always fit the curve's
+                // full arrow-count target — back the target off a little more on each retry so
+                // generation always converges on *something* constructible instead of ever
+                // failing outright, however tight the board/constrainedness combination gets.
+                float backoff = (float)Math.Pow(0.97, attempt);
+                int arrowCount = Math.Max(MinArrowCount, Math.Min((int)(profile.arrowCount * backoff), maxByFill));
 
-                if (TryConstruct(width, height, profile.arrowCount, profile.constrainedness, rng, out var arrows))
+                if (TryConstruct(width, height, arrowCount, profile.constrainedness, rng, out var arrows))
                 {
                     var layout = new LevelLayout
                     {
@@ -53,22 +63,6 @@ namespace ReleaseTheArrow.Generation
 
             throw new InvalidOperationException(
                 $"LevelGenerator failed to produce a solvable layout for level {levelId} after {MaxConstructionAttempts} attempts.");
-        }
-
-        private static (int, int) ChooseBoardSize(DifficultyProfile profile, DeterministicRandom rng)
-        {
-            float totalCells = profile.arrowCount / Math.Max(0.2f, profile.density);
-            float aspect = 0.45f + rng.NextFloat01() * 0.4f; // favors taller-than-wide portrait boards
-            int width = Clamp(RoundToInt(MathSqrt(totalCells * aspect)), MinBoardDim, MaxBoardWidth);
-            int height = Math.Max(MinBoardDim, CeilDiv(RoundToInt(totalCells), width));
-            height = Math.Min(height, MaxBoardHeight);
-
-            while ((long)width * height < profile.arrowCount)
-            {
-                if (height < MaxBoardHeight) height++;
-                else width++;
-            }
-            return (width, height);
         }
 
         private static bool TryConstruct(int width, int height, int arrowCount, float constrainedness,
@@ -164,9 +158,6 @@ namespace ReleaseTheArrow.Generation
             return result;
         }
 
-        private static int Clamp(int v, int min, int max) => v < min ? min : (v > max ? max : v);
-        private static int CeilDiv(int a, int b) => (a + b - 1) / b;
         private static int RoundToInt(float v) => (int)(v + 0.5f);
-        private static float MathSqrt(float v) => (float)Math.Sqrt(v);
     }
 }

@@ -49,6 +49,20 @@ namespace ReleaseTheArrow.Generation
             new Anchor(1500, 195, 0.97f, 0.55f),
         };
 
+        /// Level 1 is a 5x5 board, growing by one row/column per level (6x6, 7x7, ...) up to
+        /// MaxBoardSize, per the requested progression. Growth is capped rather than unbounded —
+        /// the board has no horizontal scroll, so anything wider than this stops fitting on
+        /// screen at a legible cell size. Difficulty keeps climbing past the cap via density/
+        /// constrainedness instead of raw size (see LevelGenerator, which also clamps arrowCount
+        /// to whatever actually fits in size*size cells).
+        public const int MaxBoardSize = 10;
+
+        public static int BoardSizeForLevel(int levelId)
+        {
+            levelId = Clamp(levelId, 1, MaxLevel);
+            return Clamp(levelId + 4, 5, MaxBoardSize);
+        }
+
         public static DifficultyProfile GetProfile(int levelId, DeterministicRandom rng)
         {
             levelId = Clamp(levelId, 1, MaxLevel);
