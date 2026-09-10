@@ -81,10 +81,16 @@ namespace ReleaseTheArrow.Core
             contentRect.pivot = new Vector2(0.5f, 1f);
 
             var scroll = scrollGo.GetComponent<ScrollRect>();
-            scroll.horizontal = false;
+            scroll.horizontal = true;
             scroll.vertical = true;
+            scroll.movementType = ScrollRect.MovementType.Unrestricted;
             scroll.content = contentRect;
             scroll.viewport = scrollRect;
+
+            // Pinch-to-zoom for boards too large to read at 1x — pans via the ScrollRect above,
+            // which already tells a tap on an arrow apart from a drag on the board itself.
+            var zoom = scrollGo.AddComponent<BoardZoomController>();
+            zoom.Initialize(contentRect);
 
             var boardGo = new GameObject("BoardController", typeof(RectTransform));
             boardGo.transform.SetParent(_gameplayArea, false);

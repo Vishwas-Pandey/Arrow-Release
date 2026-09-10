@@ -4,7 +4,6 @@ using ReleaseTheArrow.UI;
 using ReleaseTheArrow.Utils;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UI;
 
 namespace ReleaseTheArrow.Gameplay
 {
@@ -15,7 +14,7 @@ namespace ReleaseTheArrow.Gameplay
         public int ArrowId { get; private set; }
 
         private RectTransform _rect;
-        private Image _image;
+        private ArrowGraphic _graphic;
         private Action<int> _onTapped;
         private bool _interactable;
 
@@ -27,13 +26,12 @@ namespace ReleaseTheArrow.Gameplay
 
         public static ArrowView CreateInstance(Transform parent)
         {
-            var go = new GameObject("Arrow", typeof(RectTransform), typeof(Image));
+            var go = new GameObject("Arrow", typeof(RectTransform), typeof(CanvasRenderer), typeof(ArrowGraphic));
             go.transform.SetParent(parent, false);
             var view = go.AddComponent<ArrowView>();
             view._rect = go.GetComponent<RectTransform>();
-            view._image = go.GetComponent<Image>();
-            view._image.sprite = ArrowSpriteFactory.GetArrowSprite();
-            view._image.raycastTarget = true;
+            view._graphic = go.GetComponent<ArrowGraphic>();
+            view._graphic.raycastTarget = true;
             return view;
         }
 
@@ -55,7 +53,7 @@ namespace ReleaseTheArrow.Gameplay
             _rect.localEulerAngles = new Vector3(0f, 0f, RotationFor(spec.direction));
             _rect.localScale = Vector3.one;
 
-            _image.color = Theme.ArrowNormal;
+            _graphic.color = Theme.ArrowNormal;
             _interactable = true;
             gameObject.SetActive(true);
         }
@@ -102,7 +100,7 @@ namespace ReleaseTheArrow.Gameplay
         {
             _interactable = false;
             int gen = _generation;
-            _image.color = Theme.ArrowReleasedGlow;
+            _graphic.color = Theme.ArrowReleasedGlow;
             Tween.Scale(_rect, Vector3.one * 1.12f, 0.06f, Ease.OutQuad);
             Tween.AnchoredPosition(_rect, exitAnchoredPosition, 0.26f, Ease.InQuad, () =>
             {
@@ -116,11 +114,11 @@ namespace ReleaseTheArrow.Gameplay
         {
             int gen = _generation;
             Tween.Scale(_rect, Vector3.one, 0.08f, Ease.OutQuad);
-            _image.color = Theme.ArrowBlockedFlash;
+            _graphic.color = Theme.ArrowBlockedFlash;
             Tween.Shake(_rect, 10f, 0.26f, () =>
             {
                 if (gen != _generation) return;
-                if (_image != null) _image.color = Theme.ArrowNormal;
+                if (_graphic != null) _graphic.color = Theme.ArrowNormal;
             });
         }
     }

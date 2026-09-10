@@ -50,12 +50,14 @@ namespace ReleaseTheArrow.Generation
         };
 
         /// Level 1 is a 5x5 board, growing by one row/column per level (6x6, 7x7, ...) up to
-        /// MaxBoardSize, per the requested progression. Growth is capped rather than unbounded —
-        /// the board has no horizontal scroll, so anything wider than this stops fitting on
-        /// screen at a legible cell size. Difficulty keeps climbing past the cap via density/
-        /// constrainedness instead of raw size (see LevelGenerator, which also clamps arrowCount
-        /// to whatever actually fits in size*size cells).
-        public const int MaxBoardSize = 10;
+        /// MaxBoardSize, per the requested progression. The board now supports pinch-zoom and
+        /// free panning (BoardZoomController), so this cap is no longer "whatever fits on screen
+        /// at 1x" — it's now the point past which a single level's arrow count would exceed the
+        /// design brief's own ceiling (~130-200+ arrows at level 1500) rather than a rendering
+        /// limit. 20x20 = 400 cells comfortably holds that many at a sensible density. Difficulty
+        /// keeps climbing past the cap via density/constrainedness instead of raw size (see
+        /// LevelGenerator, which also clamps arrowCount to whatever actually fits in size*size).
+        public const int MaxBoardSize = 20;
 
         public static int BoardSizeForLevel(int levelId)
         {

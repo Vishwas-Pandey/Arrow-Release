@@ -4,7 +4,6 @@ using ReleaseTheArrow.Core;
 using ReleaseTheArrow.UI;
 using ReleaseTheArrow.Utils;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace ReleaseTheArrow.Gameplay
 {
@@ -22,8 +21,8 @@ namespace ReleaseTheArrow.Gameplay
 
         private ObjectPool<ArrowView> _arrowPool;
         private readonly Dictionary<int, ArrowView> _activeViews = new Dictionary<int, ArrowView>();
-        private readonly List<Image> _cellBackgrounds = new List<Image>();
-        private ObjectPool<Image> _cellPool;
+        private readonly List<DotGraphic> _cellBackgrounds = new List<DotGraphic>();
+        private ObjectPool<DotGraphic> _cellPool;
 
         private float _cellSize;
         private int _width;
@@ -36,7 +35,7 @@ namespace ReleaseTheArrow.Gameplay
             viewport = viewportRect;
             content = contentRect;
             _arrowPool = new ObjectPool<ArrowView>(() => ArrowView.CreateInstance(content), prewarm: 32);
-            _cellPool = new ObjectPool<Image>(CreateCellBackground, prewarm: 32);
+            _cellPool = new ObjectPool<DotGraphic>(CreateCellBackground, prewarm: 32);
         }
 
         public void LoadSession(LevelSession session)
@@ -84,15 +83,14 @@ namespace ReleaseTheArrow.Gameplay
             }
         }
 
-        private Image CreateCellBackground()
+        private DotGraphic CreateCellBackground()
         {
-            var go = new GameObject("Cell", typeof(RectTransform), typeof(Image));
+            var go = new GameObject("Cell", typeof(RectTransform), typeof(CanvasRenderer), typeof(DotGraphic));
             go.transform.SetParent(content, false);
-            var image = go.GetComponent<Image>();
-            image.sprite = IconSpriteFactory.Dot();
-            image.color = Theme.GridDot;
-            image.raycastTarget = false;
-            return image;
+            var dot = go.GetComponent<DotGraphic>();
+            dot.color = Theme.GridDot;
+            dot.raycastTarget = false;
+            return dot;
         }
 
         private void SpawnArrow(Core.ArrowSpec spec)
