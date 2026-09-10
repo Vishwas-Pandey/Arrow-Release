@@ -1,4 +1,5 @@
 using System;
+using ReleaseTheArrow.Core;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -32,6 +33,18 @@ namespace ReleaseTheArrow.UI
             titleRect.sizeDelta = new Vector2(900, 300);
 
             UIFactory.CreateText(titleRect, "RELEASE\nTHE ARROW", 88, Theme.AccentPrimary, TextAnchor.MiddleCenter, FontStyle.Bold);
+
+            // Visible build marker — so a bug report can name the exact build it came from,
+            // rather than us having to guess whether a fix actually reached the device tested.
+            var versionGo = new GameObject("BuildVersion", typeof(RectTransform));
+            var versionRect = (RectTransform)versionGo.transform;
+            versionRect.SetParent(rect, false);
+            versionRect.anchorMin = new Vector2(0.5f, 0f);
+            versionRect.anchorMax = new Vector2(0.5f, 0f);
+            versionRect.pivot = new Vector2(0.5f, 0f);
+            versionRect.anchoredPosition = new Vector2(0f, 24f);
+            versionRect.sizeDelta = new Vector2(600, 50);
+            UIFactory.CreateText(versionRect, $"build {BuildInfo.Version}", 26, Theme.TextSecondary, TextAnchor.MiddleCenter);
 
             var progressGo = new GameObject("Progress", typeof(RectTransform));
             var progressRect = (RectTransform)progressGo.transform;

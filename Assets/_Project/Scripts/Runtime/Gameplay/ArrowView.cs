@@ -70,21 +70,24 @@ namespace ReleaseTheArrow.Gameplay
         /// its completion callback against whatever this pooled instance is reused for next.
         public void Invalidate() => _generation++;
 
-        // These four values are deliberately reverse-engineered from on-device behavior, not
-        // derived from rotation-convention math — a previous "fix" here assumed Up/Down were
-        // untouched by the Unity rotation-direction issue (a 180-degree flip is direction-
-        // agnostic), but that missed a SECOND, independent bug: ArrowSpriteFactory's coverage
-        // sampling flips the base "Up" texture vertically, so the unrotated glyph actually
-        // renders pointing down. Confirmed empirically on-device: an arrow rendered pointing up
-        // at the board's top row (nothing above it — must release if truly Up) instead flashed
-        // blocked, matching an obstruction further down its column, proving its real direction
-        // was Down. Right/Left were separately confirmed correct and are unchanged.
+        // These values assume the base shape (0-degree rotation) visually points Up, rotated by
+        // Unity's standard counter-clockwise convention for a UI RectTransform's Z rotation.
+        // That assumption is true for ArrowGraphic (its mesh is built with the tip at +Y, no
+        // flip) but was FALSE for the raster sprite this used to render with (ArrowSpriteFactory
+        // had a vertical-flip bug in its coverage sampling, so its "Up" texture actually rendered
+        // pointing down) — the four constants below were reverse-engineered on-device to
+        // compensate for that flip. When ArrowGraphic replaced the raster sprite, this method
+        // should have been reverted to the values below (the flip it was compensating for no
+        // longer exists), but wasn't — leaving every direction rendering rotated 180 degrees
+        // from correct while the release/blocking logic (which uses spec.direction directly,
+        // never this rotation) stayed right. That mismatch is exactly "arrow flies opposite the
+        // way it's pointing." Re-verify with the same on-device tap sweep after touching this.
         private static float RotationFor(ArrowDirection direction) => direction switch
         {
-            ArrowDirection.Up => 180f,
-            ArrowDirection.Right => 90f,
-            ArrowDirection.Down => 0f,
-            ArrowDirection.Left => -90f,
+            ArrowDirection.Up => 0f,
+            ArrowDirection.Right => -90f,
+            ArrowDirection.Down => 180f,
+            ArrowDirection.Left => 90f,
             _ => 0f
         };
 
