@@ -5,6 +5,6 @@ namespace ReleaseTheArrow.Core
     /// stale APK) is immediately obvious on screen instead of something to guess at afterward.
     public static class BuildInfo
     {
-        public const string Version = "2026-09-11-r2";
+        public const string Version = "2026-09-11-r3";
     }
 }

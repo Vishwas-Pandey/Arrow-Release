@@ -138,5 +138,45 @@ namespace ReleaseTheArrow.Tests
                 Assert.IsTrue(seen.Add((arrow.col, arrow.row)), "Two arrows must not occupy the same cell.");
             }
         }
+
+        [Test]
+        public void LevelGenerator_Level1IsSmallAndSparse_NotFullyPacked()
+        {
+            var layout = LevelGenerator.Generate(1);
+            Assert.AreEqual(5, layout.width);
+            Assert.AreEqual(5, layout.height);
+            Assert.Less(layout.ArrowCount, layout.width * layout.height,
+                "Level 1 should start with empty cells, not a fully packed board.");
+            Assert.GreaterOrEqual(layout.ArrowCount, 8, "Level 1 should still be roughly the 10-15 arrow design target.");
+        }
+
+        [Test]
+        public void LevelGenerator_FillFractionRisesWithinAFixedBoardSize()
+        {
+            // Levels 1-5 all share a 5x5 board (DifficultyCurve steps size every 5 levels) —
+            // arrow count should still climb level to level as the fill fraction ramps.
+            int previousCount = 0;
+            for (int levelId = 1; levelId <= 5; levelId++)
+            {
+                var layout = LevelGenerator.Generate(levelId);
+                Assert.AreEqual(5, layout.width, $"Level {levelId} should still be on the 5x5 board.");
+                Assert.GreaterOrEqual(layout.ArrowCount, previousCount,
+                    $"Arrow count should not decrease from level {levelId - 1} to {levelId}.");
+                previousCount = layout.ArrowCount;
+            }
+        }
+
+        [Test]
+        public void LevelGenerator_FullyPackedOnceMaxBoardSizeIsReached()
+        {
+            var atCap = LevelGenerator.Generate(DifficultyCurve.RampEndLevel);
+            Assert.AreEqual(DifficultyCurve.MaxBoardSize, atCap.width);
+            Assert.AreEqual(atCap.width * atCap.height, atCap.ArrowCount,
+                "Once the board reaches its max size, it should be completely packed with no empty cells.");
+
+            var finalLevel = LevelGenerator.Generate(DifficultyCurve.MaxLevel);
+            Assert.AreEqual(DifficultyCurve.MaxBoardSize, finalLevel.width);
+            Assert.AreEqual(finalLevel.width * finalLevel.height, finalLevel.ArrowCount);
+        }
     }
 }
