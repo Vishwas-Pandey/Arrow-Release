@@ -9,25 +9,28 @@ namespace ReleaseTheArrow.Generation
     /// Builds a guaranteed-solvable puzzle for a given level id, at whatever board size and
     /// fill fraction DifficultyCurve assigns to that level.
     ///
-    /// The construction is a closed-form "peel the board from the outside in, one square ring
-    /// at a time" rule: every cell on a ring's boundary points straight off the board through
-    /// whichever single side it sits on (top/bottom/left/right). Every cell on that straight-line
-    /// path belongs to a strictly outer ring (or is simply empty), so the direction is safe *by
-    /// definition*, not by search — and this stays true no matter which subset of cells actually
-    /// gets an arrow. An empty cell is always already "clear", so leaving cells out to hit a
-    /// target fill fraction can never make an otherwise-safe direction unsafe. That's what lets
-    /// this generator serve both ends of the game: a sparse level 1 board and a completely packed
-    /// 80x80 finale use the exact same per-cell rule, just with a different subset of cells kept.
+    /// The direction assignment is a randomized peel, not a fixed geometric rule. An early
+    /// version pointed every cell straight at whichever single edge (top/bottom/left/right) it
+    /// was structurally closest to — provably safe, but visually it meant "the whole left side
+    /// points left, the whole right side points right", so the board always cleared as a few
+    /// big uniform regions rather than feeling tangled. This version instead simulates the
+    /// clearing process itself, injecting real randomness into both the order and the
+    /// direction, while keeping every step provably safe:
     ///
-    /// This replaces an earlier greedy "randomly place arrows, prefer the most constrained free
-    /// cell" generator, which could tune density directly but fell over at scale: pushing it
-    /// toward high fill on anything bigger than a small board took it from milliseconds to tens
-    /// of seconds (verified directly — an 80x80 attempt at ~98% fill took 96 seconds and still
-    /// only reached 22% before giving up), because "most constrained" and "still has any valid
-    /// cell left" are directly in tension once free space gets scarce. The ring-peel construction
-    /// is O(size^2) with no backtracking regardless of target fill, so an 80x80 board — packed or
-    /// not — still generates in well under a millisecond. PuzzleSolver.IsSolvable is still run as
-    /// a final safety net (with a bare fallback pattern behind it), consistent with never shipping
+    /// At any point during construction, a cell has a clear straight-line path off the board in
+    /// direction Left/Right iff it is currently the leftmost/rightmost occupied cell in its row
+    /// (nothing else remains between it and that edge); Up/Down work the same way for its
+    /// column. So the set of "currently safe (cell, direction) pairs" is exactly: each
+    /// non-empty row's current leftmost and rightmost occupied cell, plus each non-empty
+    /// column's current bottommost and topmost. That set never exceeds roughly 2*rows + 2*cols
+    /// cells, however big the board is. The generator repeatedly picks one uniformly at random,
+    /// picks one of *its* currently-safe directions at random (a cell can have more than one),
+    /// assigns that direction, and removes it — which only ever shrinks rows/columns further,
+    /// so the invariant holds until every cell is placed. No backtracking, no failed attempts,
+    /// and the frontier's small fixed size (not the whole board) keeps this fast even at an
+    /// 80x80 fully-packed board (6400 cells): each removal is an O(1) linked-list update, so
+    /// generation stays roughly O(size^2) overall. PuzzleSolver.IsSolvable is still run as a
+    /// final safety net (with a bare fallback pattern behind it), consistent with never shipping
     /// a level that hasn't actually been verified.
     public static class LevelGenerator
     {
@@ -42,7 +45,7 @@ namespace ReleaseTheArrow.Generation
                 levelId = levelId,
                 width = size,
                 height = size,
-                arrows = BuildLayout(size, rng, fillFraction),
+                arrows = BuildRandomizedPeelLayout(size, rng, fillFraction),
                 seed = levelId,
                 generationAttempt = 0
             };
@@ -50,10 +53,11 @@ namespace ReleaseTheArrow.Generation
 
             if (PuzzleSolver.IsSolvable(layout)) return layout;
 
-            // Should be structurally unreachable — every cell's direction is proven safe by
-            // construction regardless of which subset of cells is kept — but a level that hasn't
-            // actually been verified must never ship.
-            layout.arrows = BuildLayout(size, rng: null, fillFraction: 1f);
+            // Should be structurally unreachable — every direction is only ever assigned once
+            // it's already proven safe — but a level that hasn't actually been verified must
+            // never ship. Falls back to the simplest possible safe pattern: peel from the
+            // outside in, one ring at a time.
+            layout.arrows = BuildRingPeelFallbackLayout(size);
             layout.difficultyScore = layout.ArrowCount;
             if (!PuzzleSolver.IsSolvable(layout))
                 throw new InvalidOperationException(
@@ -61,87 +65,182 @@ namespace ReleaseTheArrow.Generation
             return layout;
         }
 
-        /// Peels the board from the outside in and keeps roughly `fillFraction` of its cells.
-        /// `rng` is optional; when present it also picks which of a handful of provably-equivalent
-        /// symmetric relabelings is used (purely cosmetic) and which cells survive the fill-fraction
-        /// trim (never a factor in whether the result is solvable — see class remarks).
-        private static List<ArrowSpec> BuildLayout(int size, DeterministicRandom rng, float fillFraction)
+        private static List<ArrowSpec> BuildRandomizedPeelLayout(int size, DeterministicRandom rng, float fillFraction)
         {
-            var cells = new List<(int col, int row, ArrowDirection dir)>(size * size);
+            bool[,] occupied = ChooseOccupiedCells(size, rng, fillFraction);
 
-            bool swapAxes = rng != null && rng.NextFloat01() < 0.5f;
-            bool flipRows = rng != null && rng.NextFloat01() < 0.5f;
-            bool flipCols = rng != null && rng.NextFloat01() < 0.5f;
+            // Doubly linked lists of occupied cells, ordered by column within each row and by
+            // row within each column — -1 is the "no such neighbor" sentinel throughout.
+            var rowPrev = new int[size, size];
+            var rowNext = new int[size, size];
+            var colPrev = new int[size, size];
+            var colNext = new int[size, size];
+            var rowLeftmost = new int[size];
+            var rowRightmost = new int[size];
+            var colBottommost = new int[size];
+            var colTopmost = new int[size];
+            for (int i = 0; i < size; i++)
+            {
+                rowLeftmost[i] = rowRightmost[i] = -1;
+                colBottommost[i] = colTopmost[i] = -1;
+            }
 
-            ArrowDirection upDir = flipRows ? ArrowDirection.Down : ArrowDirection.Up;
-            ArrowDirection downDir = flipRows ? ArrowDirection.Up : ArrowDirection.Down;
-            ArrowDirection leftDir = flipCols ? ArrowDirection.Right : ArrowDirection.Left;
-            ArrowDirection rightDir = flipCols ? ArrowDirection.Left : ArrowDirection.Right;
+            for (int row = 0; row < size; row++)
+            {
+                int prev = -1;
+                for (int col = 0; col < size; col++)
+                {
+                    if (!occupied[col, row]) continue;
+                    rowPrev[col, row] = prev;
+                    if (prev == -1) rowLeftmost[row] = col; else rowNext[prev, row] = col;
+                    prev = col;
+                }
+                if (prev != -1) rowNext[prev, row] = -1;
+                rowRightmost[row] = prev;
+            }
 
+            for (int col = 0; col < size; col++)
+            {
+                int prev = -1;
+                for (int row = 0; row < size; row++)
+                {
+                    if (!occupied[col, row]) continue;
+                    colPrev[col, row] = prev;
+                    if (prev == -1) colBottommost[col] = row; else colNext[col, prev] = row;
+                    prev = row;
+                }
+                if (prev != -1) colNext[col, prev] = -1;
+                colTopmost[col] = prev;
+            }
+
+            // Frontier of currently-safe cells, as a swap-remove list for O(1) random pick/removal.
+            var frontierList = new List<int>();
+            var frontierIndex = new Dictionary<int, int>();
+            void AddToFrontier(int cellId)
+            {
+                if (frontierIndex.ContainsKey(cellId)) return;
+                frontierIndex[cellId] = frontierList.Count;
+                frontierList.Add(cellId);
+            }
+            void RemoveFromFrontier(int cellId)
+            {
+                int idx = frontierIndex[cellId];
+                int lastIdx = frontierList.Count - 1;
+                int lastCell = frontierList[lastIdx];
+                frontierList[idx] = lastCell;
+                frontierIndex[lastCell] = idx;
+                frontierList.RemoveAt(lastIdx);
+                frontierIndex.Remove(cellId);
+            }
+            int CellId(int col, int row) => row * size + col;
+
+            for (int row = 0; row < size; row++)
+            {
+                if (rowLeftmost[row] != -1) AddToFrontier(CellId(rowLeftmost[row], row));
+                if (rowRightmost[row] != -1) AddToFrontier(CellId(rowRightmost[row], row));
+            }
+            for (int col = 0; col < size; col++)
+            {
+                if (colBottommost[col] != -1) AddToFrontier(CellId(col, colBottommost[col]));
+                if (colTopmost[col] != -1) AddToFrontier(CellId(col, colTopmost[col]));
+            }
+
+            var validDirs = new List<ArrowDirection>(4);
+            var placed = new List<ArrowSpec>();
+            int nextId = 0;
+
+            while (frontierList.Count > 0)
+            {
+                int cellId = frontierList[rng.NextInt(0, frontierList.Count)];
+                int col = cellId % size;
+                int row = cellId / size;
+
+                validDirs.Clear();
+                if (rowLeftmost[row] == col) validDirs.Add(ArrowDirection.Left);
+                if (rowRightmost[row] == col) validDirs.Add(ArrowDirection.Right);
+                if (colBottommost[col] == row) validDirs.Add(ArrowDirection.Down);
+                if (colTopmost[col] == row) validDirs.Add(ArrowDirection.Up);
+
+                var chosen = validDirs[rng.NextInt(0, validDirs.Count)];
+                placed.Add(new ArrowSpec(nextId++, col, row, chosen));
+
+                int rp = rowPrev[col, row], rn = rowNext[col, row];
+                if (rp == -1) rowLeftmost[row] = rn; else rowNext[rp, row] = rn;
+                if (rn == -1) rowRightmost[row] = rp; else rowPrev[rn, row] = rp;
+
+                int cp = colPrev[col, row], cn = colNext[col, row];
+                if (cp == -1) colBottommost[col] = cn; else colNext[col, cp] = cn;
+                if (cn == -1) colTopmost[col] = cp; else colPrev[col, cn] = cp;
+
+                RemoveFromFrontier(cellId);
+                if (rowLeftmost[row] != -1) AddToFrontier(CellId(rowLeftmost[row], row));
+                if (rowRightmost[row] != -1) AddToFrontier(CellId(rowRightmost[row], row));
+                if (colBottommost[col] != -1) AddToFrontier(CellId(col, colBottommost[col]));
+                if (colTopmost[col] != -1) AddToFrontier(CellId(col, colTopmost[col]));
+            }
+
+            placed.Sort((a, b) => a.row != b.row ? a.row.CompareTo(b.row) : a.col.CompareTo(b.col));
+            for (int i = 0; i < placed.Count; i++)
+            {
+                var p = placed[i];
+                p.id = i;
+                placed[i] = p;
+            }
+            return placed;
+        }
+
+        private static bool[,] ChooseOccupiedCells(int size, DeterministicRandom rng, float fillFraction)
+        {
+            var occupied = new bool[size, size];
+            var allCells = new List<(int col, int row)>(size * size);
+            for (int col = 0; col < size; col++)
+                for (int row = 0; row < size; row++)
+                    allCells.Add((col, row));
+
+            int targetCount = fillFraction >= 1f
+                ? allCells.Count
+                : Math.Clamp((int)Math.Round(allCells.Count * fillFraction), 1, allCells.Count);
+
+            if (targetCount < allCells.Count)
+            {
+                rng.Shuffle(allCells);
+                allCells.RemoveRange(targetCount, allCells.Count - targetCount);
+            }
+
+            foreach (var (col, row) in allCells) occupied[col, row] = true;
+            return occupied;
+        }
+
+        /// Simplest possible always-safe pattern, used only if the randomized peel somehow
+        /// failed validation: peel the board from the outside in, one ring at a time, every
+        /// cell pointing straight off the board through whichever side of its ring it sits on.
+        private static List<ArrowSpec> BuildRingPeelFallbackLayout(int size)
+        {
+            var arrows = new List<ArrowSpec>(size * size);
+            int nextId = 0;
             int maxRing = (size - 1) / 2;
             for (int r = 0; r <= maxRing; r++)
             {
                 int left = r, right = size - 1 - r, bottom = r, top = size - 1 - r;
-
                 if (left == right && bottom == top)
                 {
-                    // Odd-sized board's single center cell — nothing else remains, any direction
-                    // is trivially clear.
-                    cells.Add((left, bottom, upDir));
+                    arrows.Add(new ArrowSpec(nextId++, left, bottom, ArrowDirection.Up));
                     continue;
                 }
-
                 for (int col = left; col <= right; col++)
                 {
                     for (int row = bottom; row <= top; row++)
                     {
-                        // Only this ring's boundary — its interior belongs to inner rings handled
-                        // on a later iteration.
                         bool onBoundary = col == left || col == right || row == bottom || row == top;
                         if (!onBoundary) continue;
-
-                        bool isTopSide = row == (flipRows ? bottom : top);
-                        bool isBottomSide = row == (flipRows ? top : bottom);
-                        bool isLeftSide = col == (flipCols ? right : left);
-                        bool isRightSide = col == (flipCols ? left : right);
-
-                        ArrowDirection dir;
-                        if (swapAxes)
-                        {
-                            if (isLeftSide) dir = leftDir;
-                            else if (isRightSide) dir = rightDir;
-                            else if (isTopSide) dir = upDir;
-                            else dir = downDir; // isBottomSide
-                        }
-                        else
-                        {
-                            if (isTopSide) dir = upDir;
-                            else if (isBottomSide) dir = downDir;
-                            else if (isLeftSide) dir = leftDir;
-                            else dir = rightDir; // isRightSide
-                        }
-
-                        cells.Add((col, row, dir));
+                        ArrowDirection dir = row == top ? ArrowDirection.Up
+                            : row == bottom ? ArrowDirection.Down
+                            : col == left ? ArrowDirection.Left
+                            : ArrowDirection.Right;
+                        arrows.Add(new ArrowSpec(nextId++, col, row, dir));
                     }
                 }
             }
-
-            int targetCount = fillFraction >= 1f
-                ? cells.Count
-                : Math.Clamp((int)Math.Round(cells.Count * fillFraction), 1, cells.Count);
-
-            if (targetCount < cells.Count && rng != null)
-            {
-                rng.Shuffle(cells);
-                cells.RemoveRange(targetCount, cells.Count - targetCount);
-                // Sort back into reading order — the shuffle only needed to pick *which* cells
-                // survive, not the order they're stored/rendered in.
-                cells.Sort((a, b) => a.row != b.row ? a.row.CompareTo(b.row) : a.col.CompareTo(b.col));
-            }
-
-            var arrows = new List<ArrowSpec>(cells.Count);
-            for (int i = 0; i < cells.Count; i++)
-                arrows.Add(new ArrowSpec(i, cells[i].col, cells[i].row, cells[i].dir));
             return arrows;
         }
     }
