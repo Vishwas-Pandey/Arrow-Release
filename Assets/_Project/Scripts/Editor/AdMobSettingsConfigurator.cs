@@ -16,6 +16,12 @@ namespace ReleaseTheArrow.EditorTools
         [MenuItem("Release The Arrow/Ads/Set AdMob Android App ID To Test ID")]
         public static void ConfigureTestAppId() => SetAndroidAppId(ReleaseTheArrow.Ads.AdMobConfig.TestAppId);
 
+        /// Only run this immediately before the actual signed Play Store submission build —
+        /// every development/QA build must keep the manifest's App ID on the test value above,
+        /// consistent with AdMobConfig's own UseTestAds discipline.
+        [MenuItem("Release The Arrow/Ads/Set AdMob Android App ID To REAL ID (submission build only)")]
+        public static void ConfigureRealAppId() => SetAndroidAppId(ReleaseTheArrow.Ads.AdMobConfig.RealAppId);
+
         public static void SetAndroidAppId(string appId)
         {
             var settingsType = Type.GetType(SettingsTypeName);

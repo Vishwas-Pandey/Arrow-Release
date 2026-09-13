@@ -14,10 +14,10 @@ namespace ReleaseTheArrow.Ads
         public const string TestInterstitialId = "ca-app-pub-3940256099942544/1033173712";
         public const string TestRewardedId = "ca-app-pub-3940256099942544/5224354917";
 
-        public const string RealAppId = "REPLACE_WITH_REAL_ADMOB_APP_ID";
-        public const string RealBannerId = "REPLACE_WITH_REAL_BANNER_AD_UNIT_ID";
-        public const string RealInterstitialId = "REPLACE_WITH_REAL_INTERSTITIAL_AD_UNIT_ID";
-        public const string RealRewardedId = "REPLACE_WITH_REAL_REWARDED_AD_UNIT_ID";
+        public const string RealAppId = "ca-app-pub-2894715849700422~9446696824";
+        public const string RealBannerId = "ca-app-pub-2894715849700422/8557121138";
+        public const string RealInterstitialId = "ca-app-pub-2894715849700422/7244039462";
+        public const string RealRewardedId = "ca-app-pub-2894715849700422/2139052444";
 
         public static string AppId => UseTestAds ? TestAppId : RealAppId;
         public static string BannerId => UseTestAds ? TestBannerId : RealBannerId;
