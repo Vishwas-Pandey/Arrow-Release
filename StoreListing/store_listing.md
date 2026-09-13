@@ -74,16 +74,29 @@ puzzle, arrow, casual, brain teaser, logic, offline puzzle, tap puzzle
 
 ## Content rating questionnaire (Play Console)
 Answer honestly based on actual content — this game has no violence, no
-user-generated content, no chat, no gambling mechanics, and (currently) no
-data collection. Expect an "Everyone" rating.
+user-generated content, no chat, and no gambling mechanics. There IS
+advertising (answer "yes" to the ads question) via Google AdMob. Expect an
+"Everyone" rating.
 
 ## Data safety form (Play Console)
-As shipped today (stub ad provider, no real AdMob SDK compiled in, no
-analytics backend wired up): the app collects and shares NO data at all —
-answer the form accordingly ("No data collected").
-If/when the real Google Mobile Ads SDK is enabled (RTA_ADMOB_SDK define +
-real ad unit IDs), this form MUST be revisited: AdMob collects device/
-advertising identifiers and this changes the correct answers throughout the
-form. Do not ship with AdMob enabled without updating this form first —
-Google can reject or suspend the app for a mismatched data safety
-declaration.
+The real Google Mobile Ads SDK is now compiled into the app (currently
+running on Google's TEST ad unit IDs for development — see AdMobConfig.cs).
+Once shipped with `UseTestAds = false` and real ad unit IDs, AdMob is what
+actually collects data, so the Data Safety form must reflect AdMob's
+collection, not "no data collected". As a baseline (verify against Play
+Console's current categories at submission time, since Google revises this
+form periodically):
+- **Data collected**: Device or other IDs (advertising ID) — collected via
+  AdMob for ad delivery and measurement.
+- **Purpose**: Advertising or marketing.
+- **Shared with third parties**: Yes — Google/AdMob and its ad network
+  partners.
+- **Encrypted in transit**: Yes (AdMob requests use HTTPS).
+- **Optional / can users request deletion**: users can reset their
+  advertising ID or opt out of personalized ads via their device's Google
+  Settings; the app itself stores no personal data server-side.
+- Everything else (level progress, star ratings, settings) stays local-only,
+  never transmitted — answer those categories "not collected".
+- The UMP consent flow (ConsentManager.cs) already gates ad requests behind
+  user consent where required (EEA/UK/similar), so "ads are optional/
+  consent-gated" is accurate to state if the form asks.
