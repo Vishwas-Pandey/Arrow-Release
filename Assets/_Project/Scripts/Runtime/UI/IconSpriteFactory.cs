@@ -17,6 +17,7 @@ namespace ReleaseTheArrow.UI
         public static Sprite Check() => GetOrBuild("check", IsInsideCheck);
         public static Sprite Pause() => GetOrBuild("pause", IsInsidePause);
         public static Sprite Dot() => GetOrBuild("dot", IsInsideDot);
+        public static Sprite Star() => GetOrBuild("star", IsInsideStar);
 
         private static Sprite GetOrBuild(string key, System.Func<float, float, bool> shape)
         {
@@ -87,6 +88,36 @@ namespace ReleaseTheArrow.UI
         /// The board's resting grid marker — every cell shows one, arrows sit on top of it, and
         /// it's what's left once an arrow is released, per the "matrix of dots" board look.
         private static bool IsInsideDot(float x, float y) => InCircle(x, y, 0f, 0f, 0.34f);
+
+        private static readonly Vector2[] StarPoints = BuildStarPoints(5, 0.46f, 0.18f);
+
+        private static Vector2[] BuildStarPoints(int points, float outerRadius, float innerRadius)
+        {
+            var verts = new Vector2[points * 2];
+            for (int i = 0; i < points * 2; i++)
+            {
+                float r = (i % 2 == 0) ? outerRadius : innerRadius;
+                float angle = Mathf.PI / 2f + i * Mathf.PI / points;
+                verts[i] = new Vector2(Mathf.Cos(angle) * r, Mathf.Sin(angle) * r);
+            }
+            return verts;
+        }
+
+        private static bool IsInsideStar(float x, float y) => PointInPolygon(x, y, StarPoints);
+
+        private static bool PointInPolygon(float px, float py, Vector2[] poly)
+        {
+            bool inside = false;
+            for (int i = 0, j = poly.Length - 1; i < poly.Length; j = i++)
+            {
+                float xi = poly[i].x, yi = poly[i].y;
+                float xj = poly[j].x, yj = poly[j].y;
+                bool intersect = (yi > py) != (yj > py) &&
+                    px < (xj - xi) * (py - yi) / (yj - yi) + xi;
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
 
         private static bool InCircle(float x, float y, float cx, float cy, float r) => (x - cx) * (x - cx) + (y - cy) * (y - cy) <= r * r;
 

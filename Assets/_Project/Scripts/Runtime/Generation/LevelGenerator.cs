@@ -38,6 +38,7 @@ namespace ReleaseTheArrow.Generation
         {
             int size = DifficultyCurve.BoardSizeForLevel(levelId);
             float fillFraction = DifficultyCurve.FillFractionForLevel(levelId);
+            float localityBias = DifficultyCurve.LocalityBiasForLevel(levelId);
             var rng = new DeterministicRandom(unchecked((int)((uint)levelId * 2654435761u)));
 
             var layout = new LevelLayout
@@ -45,7 +46,7 @@ namespace ReleaseTheArrow.Generation
                 levelId = levelId,
                 width = size,
                 height = size,
-                arrows = BuildRandomizedPeelLayout(size, rng, fillFraction),
+                arrows = BuildRandomizedPeelLayout(size, rng, fillFraction, localityBias),
                 seed = levelId,
                 generationAttempt = 0
             };
@@ -65,7 +66,7 @@ namespace ReleaseTheArrow.Generation
             return layout;
         }
 
-        private static List<ArrowSpec> BuildRandomizedPeelLayout(int size, DeterministicRandom rng, float fillFraction)
+        private static List<ArrowSpec> BuildRandomizedPeelLayout(int size, DeterministicRandom rng, float fillFraction, float localityBias)
         {
             bool[,] occupied = ChooseOccupiedCells(size, rng, fillFraction);
 
@@ -146,14 +147,19 @@ namespace ReleaseTheArrow.Generation
             }
 
             var validDirs = new List<ArrowDirection>(4);
+            var localCandidates = new List<int>();
             var placed = new List<ArrowSpec>();
             int nextId = 0;
+            int lastCol = -1, lastRow = -1;
+            int localityRadius = System.Math.Max(1, size / 6);
 
             while (frontierList.Count > 0)
             {
-                int cellId = frontierList[rng.NextInt(0, frontierList.Count)];
+                int cellId = PickNextCell(frontierList, localCandidates, rng, lastCol, lastRow, size, localityRadius, localityBias);
                 int col = cellId % size;
                 int row = cellId / size;
+                lastCol = col;
+                lastRow = row;
 
                 validDirs.Clear();
                 if (rowLeftmost[row] == col) validDirs.Add(ArrowDirection.Left);
@@ -187,6 +193,30 @@ namespace ReleaseTheArrow.Generation
                 placed[i] = p;
             }
             return placed;
+        }
+
+        /// Picks the next cell to peel off the frontier. With probability `localityBias`, restricts
+        /// the choice to frontier cells within `radius` of the last-placed cell (falling back to a
+        /// uniform pick across the whole frontier when none qualify) — clustering removals this way
+        /// produces longer, more localized dependency chains than a fully uniform pick would, so
+        /// higher levels take more foresight to untangle even at the same arrow count.
+        private static int PickNextCell(List<int> frontierList, List<int> localCandidates, DeterministicRandom rng,
+            int lastCol, int lastRow, int size, int radius, float localityBias)
+        {
+            if (lastCol >= 0 && localityBias > 0f && rng.NextFloat01() < localityBias)
+            {
+                localCandidates.Clear();
+                for (int i = 0; i < frontierList.Count; i++)
+                {
+                    int cellId = frontierList[i];
+                    int col = cellId % size;
+                    int row = cellId / size;
+                    if (System.Math.Abs(col - lastCol) <= radius && System.Math.Abs(row - lastRow) <= radius)
+                        localCandidates.Add(cellId);
+                }
+                if (localCandidates.Count > 0) return localCandidates[rng.NextInt(0, localCandidates.Count)];
+            }
+            return frontierList[rng.NextInt(0, frontierList.Count)];
         }
 
         private static bool[,] ChooseOccupiedCells(int size, DeterministicRandom rng, float fillFraction)

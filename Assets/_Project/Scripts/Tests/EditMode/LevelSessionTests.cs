@@ -97,6 +97,51 @@ namespace ReleaseTheArrow.Tests
         }
 
         [Test]
+        public void StarsEarned_ThreeStars_WhenClearedWithNoLivesLost()
+        {
+            var session = NewSession();
+            PuzzleSolver.TrySolve(session.Layout, out var order);
+            foreach (var id in order) session.Tap(id);
+
+            Assert.AreEqual(LevelSessionState.Complete, session.State);
+            Assert.AreEqual(3, session.StarsEarned);
+        }
+
+        [Test]
+        public void StarsEarned_TwoStars_WhenALifeWasLostButNoContinueUsed()
+        {
+            var session = NewSession();
+            PuzzleSolver.TrySolve(session.Layout, out var order);
+            int blockedId = order[order.Count - 1];
+            if (session.Board.IsReleasable(blockedId)) Assert.Ignore("Level too trivial to have a blocked first arrow.");
+
+            session.Tap(blockedId); // one wasted life, no game over
+            foreach (var id in order) session.Tap(id);
+
+            Assert.AreEqual(LevelSessionState.Complete, session.State);
+            Assert.AreEqual(2, session.StarsEarned);
+        }
+
+        [Test]
+        public void StarsEarned_OneStar_AfterUsingAContinue()
+        {
+            var session = NewSession();
+            PuzzleSolver.TrySolve(session.Layout, out var order);
+            int blockedId = order[order.Count - 1];
+            if (session.Board.IsReleasable(blockedId)) Assert.Ignore("Level too trivial to have a blocked first arrow.");
+
+            session.Tap(blockedId);
+            session.Tap(blockedId);
+            session.Tap(blockedId);
+            Assert.IsTrue(session.GrantContinue());
+
+            foreach (var id in order) session.Tap(id);
+
+            Assert.AreEqual(LevelSessionState.Complete, session.State);
+            Assert.AreEqual(1, session.StarsEarned);
+        }
+
+        [Test]
         public void Restore_PreservesExactRemovedAndRemainingArrows()
         {
             var original = NewSession(50);

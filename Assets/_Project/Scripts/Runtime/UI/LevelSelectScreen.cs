@@ -23,6 +23,7 @@ namespace ReleaseTheArrow.UI
         private Button _prevButton, _nextButton;
         private int _currentPage;
         private int _highestUnlocked = 1;
+        private Func<int, int> _getStars = _ => 0;
         private readonly List<GameObject> _spawned = new List<GameObject>();
 
         public static LevelSelectScreen Create(Transform parent)
@@ -119,9 +120,10 @@ namespace ReleaseTheArrow.UI
             _nextButton = UIFactory.CreateButton(footerRect, "NEXT >", new Vector2(260, 100), Theme.ButtonBackground, Theme.TextPrimary, () => ChangePage(1), 32);
         }
 
-        public void Open(int highestUnlockedLevel)
+        public void Open(int highestUnlockedLevel, Func<int, int> getStars)
         {
             _highestUnlocked = highestUnlockedLevel;
+            _getStars = getStars ?? (_ => 0);
             _currentPage = (Mathf.Clamp(highestUnlockedLevel, 1, DifficultyCurve.MaxLevel) - 1) / PageSize;
             RenderPage();
         }
@@ -173,10 +175,20 @@ namespace ReleaseTheArrow.UI
                 button = UIFactory.CreateButton(_gridContainer, level.ToString(), new Vector2(150, 150), bg, fg, () => LevelChosen?.Invoke(level), 40);
                 if (completed)
                 {
-                    var badge = UIFactory.CreateIcon(button.transform, IconSpriteFactory.Check(), new Vector2(36, 36), new Color(0f, 0f, 0f, 0.55f));
-                    var badgeRect = (RectTransform)badge.transform;
-                    badgeRect.anchorMin = badgeRect.anchorMax = new Vector2(1f, 1f);
-                    badgeRect.anchoredPosition = new Vector2(-24f, -24f);
+                    int stars = _getStars(level);
+                    var starRowGo = new GameObject("Stars", typeof(RectTransform));
+                    var starRowRect = (RectTransform)starRowGo.transform;
+                    starRowRect.SetParent(button.transform, false);
+                    starRowRect.anchorMin = starRowRect.anchorMax = new Vector2(0.5f, 0f);
+                    starRowRect.pivot = new Vector2(0.5f, 0f);
+                    starRowRect.anchoredPosition = new Vector2(0f, 10f);
+                    starRowRect.sizeDelta = new Vector2(120, 28);
+                    UIFactory.AddHorizontalLayout(starRowGo, spacing: 4);
+                    for (int i = 0; i < 3; i++)
+                    {
+                        var color = i < stars ? new Color(0f, 0f, 0f, 0.75f) : new Color(0f, 0f, 0f, 0.25f);
+                        UIFactory.CreateIcon(starRowRect, IconSpriteFactory.Star(), new Vector2(24, 24), color);
+                    }
                 }
             }
             return button.gameObject;

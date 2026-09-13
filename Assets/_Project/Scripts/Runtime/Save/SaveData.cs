@@ -40,6 +40,26 @@ namespace ReleaseTheArrow.Save
         public bool hasInProgress;
         public InProgressLevelState inProgress = new InProgressLevelState();
 
+        /// Best-ever star rating (1-3) per level, indexed by levelId - 1. Shorter than
+        /// highestUnlockedLevel whenever a level hasn't been completed yet — GetStars/SetStars
+        /// below treat any out-of-range index as "no stars yet" rather than growing this eagerly.
+        public List<int> levelStars = new List<int>();
+
+        public int GetStars(int levelId)
+        {
+            int index = levelId - 1;
+            return index >= 0 && index < levelStars.Count ? levelStars[index] : 0;
+        }
+
+        /// Records `stars` for `levelId` only if it beats whatever's already stored.
+        public void SetStarsIfBetter(int levelId, int stars)
+        {
+            int index = levelId - 1;
+            if (index < 0) return;
+            while (levelStars.Count <= index) levelStars.Add(0);
+            if (stars > levelStars[index]) levelStars[index] = stars;
+        }
+
         public SaveData Clone()
         {
             return new SaveData
@@ -50,7 +70,8 @@ namespace ReleaseTheArrow.Save
                 soundOn = soundOn,
                 vibrationOn = vibrationOn,
                 hasInProgress = hasInProgress,
-                inProgress = inProgress.Clone()
+                inProgress = inProgress.Clone(),
+                levelStars = new List<int>(levelStars)
             };
         }
     }

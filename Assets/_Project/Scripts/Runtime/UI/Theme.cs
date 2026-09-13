@@ -36,5 +36,8 @@ namespace ReleaseTheArrow.UI
         public static readonly Color LockedLevel = new Color32(0x2A, 0x2F, 0x50, 0xFF);
         public static readonly Color CompletedLevel = new Color32(0x74, 0xF2, 0xB0, 0xFF);
         public static readonly Color CurrentLevel = new Color32(0xFF, 0xC8, 0x5C, 0xFF);
+
+        public static readonly Color StarFull = new Color32(0xFF, 0xC8, 0x5C, 0xFF);
+        public static readonly Color StarEmpty = new Color32(0x3A, 0x3F, 0x5C, 0xFF);
     }
 }

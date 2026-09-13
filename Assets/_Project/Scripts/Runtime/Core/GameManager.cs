@@ -177,6 +177,7 @@ namespace ReleaseTheArrow.Core
             {
                 SaveData.highestUnlockedLevel = completedId + 1;
             }
+            SaveData.SetStarsIfBetter(completedId, CurrentSession.StarsEarned);
             SaveSystem.ClearInProgress(SaveData);
             SetState(AppState.LevelComplete);
         }

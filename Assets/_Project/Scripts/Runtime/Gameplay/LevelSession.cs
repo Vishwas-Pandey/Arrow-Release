@@ -100,6 +100,19 @@ namespace ReleaseTheArrow.Gameplay
             return TapResult.Blocked;
         }
 
+        /// 1-3 star rating for a completed level, based on how clean the clear was: 3 for never
+        /// losing a life, 2 for losing at least one life but never needing a continue, 1 for
+        /// needing any continue at all. 0 if the level isn't actually complete yet.
+        public int StarsEarned
+        {
+            get
+            {
+                if (State != LevelSessionState.Complete) return 0;
+                if (ContinuesUsed > 0) return 1;
+                return Lives >= StartingLives ? 3 : 2;
+            }
+        }
+
         /// How many rewarded ads must complete before the next continue grants its 1 life.
         /// 0 means no continue is available (the fourth knockout: must restart).
         public int AdsRequiredForNextContinue()

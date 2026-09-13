@@ -40,13 +40,45 @@ namespace ReleaseTheArrow.Generation
             return Clamp(MinBoardSize + step, MinBoardSize, MaxBoardSize);
         }
 
+        /// Every level this many levels apart (after the opening band) eases the fill fraction
+        /// back slightly before the ramp resumes — a deliberate "breather" so the climb reads as
+        /// organic pressure-and-release rather than a perfectly rigid staircase. It never drops
+        /// the fraction below what the player already faced BreatherPeriod levels earlier, so the
+        /// long-range trend is still strictly toward "harder", just not a dead-straight line.
+        private const int BreatherPeriod = 12;
+        private const float BreatherStrength = 0.10f;
+
         public static float FillFractionForLevel(int levelId)
         {
             levelId = Clamp(levelId, 1, MaxLevel);
             if (levelId >= RampEndLevel) return 1f;
 
+            float baseFraction = RawRampFraction(levelId);
+            if (levelId <= 5 || levelId % BreatherPeriod != 0) return baseFraction;
+
+            float floor = RawRampFraction(Clamp(levelId - BreatherPeriod, 1, MaxLevel));
+            float breathed = baseFraction - BreatherStrength;
+            return breathed > floor ? breathed : floor;
+        }
+
+        private static float RawRampFraction(int levelId)
+        {
+            if (levelId >= RampEndLevel) return 1f;
             float t = (levelId - 1) / (float)(RampEndLevel - 1);
             return StartFillFraction + (1f - StartFillFraction) * t;
+        }
+
+        /// How strongly LevelGenerator should cluster its removal order around recently-placed
+        /// cells rather than picking uniformly across the whole frontier. 0 at the very start
+        /// (fully random, easiest to read) ramping up to 0.5 by the time the board reaches
+        /// MaxBoardSize, then holding there — clustering produces deeper, more localized
+        /// dependency chains that take more foresight to untangle than density alone provides.
+        public static float LocalityBiasForLevel(int levelId)
+        {
+            levelId = Clamp(levelId, 1, MaxLevel);
+            float t = (levelId - 1) / (float)(RampEndLevel - 1);
+            if (t < 0f) t = 0f; else if (t > 1f) t = 1f;
+            return t * 0.5f;
         }
 
         private static int Clamp(int v, int min, int max) => v < min ? min : (v > max ? max : v);

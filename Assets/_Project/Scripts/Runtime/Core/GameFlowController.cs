@@ -205,7 +205,7 @@ namespace ReleaseTheArrow.Core
                     break;
 
                 case AppState.LevelSelect:
-                    _levelSelect.Open(_gameManager.SaveData.highestUnlockedLevel);
+                    _levelSelect.Open(_gameManager.SaveData.highestUnlockedLevel, _gameManager.SaveData.GetStars);
                     break;
 
                 case AppState.Playing:
@@ -225,6 +225,7 @@ namespace ReleaseTheArrow.Core
                 case AppState.LevelComplete:
                     AudioManager.Instance.Play(Sfx.LevelComplete);
                     AnalyticsManager.LevelCompleted(_gameManager.CurrentSession.Layout.levelId);
+                    _levelComplete.Configure(_gameManager.CurrentSession.StarsEarned);
                     break;
 
                 case AppState.FinalCompletion:

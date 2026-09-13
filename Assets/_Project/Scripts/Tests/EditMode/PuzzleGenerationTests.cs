@@ -87,8 +87,11 @@ namespace ReleaseTheArrow.Tests
 
         [TestCase(1)]
         [TestCase(2)]
+        [TestCase(12)]
         [TestCase(20)]
         [TestCase(21)]
+        [TestCase(24)]
+        [TestCase(36)]
         [TestCase(100)]
         [TestCase(300)]
         [TestCase(600)]
@@ -164,6 +167,28 @@ namespace ReleaseTheArrow.Tests
                     $"Arrow count should not decrease from level {levelId - 1} to {levelId}.");
                 previousCount = layout.ArrowCount;
             }
+        }
+
+        [Test]
+        public void DifficultyCurve_BreatherLevelNeverDropsBelowPriorBreatherWindow()
+        {
+            // Breather levels ease off the raw ramp for pacing, but must never regress past what
+            // the player already faced one breather period earlier.
+            for (int levelId = 12; levelId < DifficultyCurve.RampEndLevel; levelId += 12)
+            {
+                float current = DifficultyCurve.FillFractionForLevel(levelId);
+                float priorWindow = DifficultyCurve.FillFractionForLevel(levelId - 12);
+                Assert.GreaterOrEqual(current, priorWindow,
+                    $"Level {levelId}'s fill fraction must not drop below level {levelId - 12}'s.");
+            }
+        }
+
+        [Test]
+        public void DifficultyCurve_LocalityBiasRampsFromZeroToHalf()
+        {
+            Assert.AreEqual(0f, DifficultyCurve.LocalityBiasForLevel(1));
+            Assert.AreEqual(0.5f, DifficultyCurve.LocalityBiasForLevel(DifficultyCurve.RampEndLevel), 0.001f);
+            Assert.AreEqual(0.5f, DifficultyCurve.LocalityBiasForLevel(DifficultyCurve.MaxLevel), 0.001f);
         }
 
         [Test]

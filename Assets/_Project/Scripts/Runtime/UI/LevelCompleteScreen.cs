@@ -1,11 +1,15 @@
 using System;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace ReleaseTheArrow.UI
 {
     public class LevelCompleteScreen : MonoBehaviour
     {
         public event Action NextLevelRequested;
+
+        private RectTransform _starRow;
+        private readonly System.Collections.Generic.List<Image> _starImages = new System.Collections.Generic.List<Image>();
 
         public static LevelCompleteScreen Create(Transform parent)
         {
@@ -15,6 +19,15 @@ namespace ReleaseTheArrow.UI
             return screen;
         }
 
+        /// Fills in (or empties) the three star icons for how clean this clear was.
+        public void Configure(int starsEarned)
+        {
+            for (int i = 0; i < _starImages.Count; i++)
+            {
+                _starImages[i].color = i < starsEarned ? Theme.StarFull : Theme.StarEmpty;
+            }
+        }
+
         private void Build(RectTransform backdrop)
         {
             var panel = UIFactory.CreatePanel(backdrop, "Panel", new Vector2(680, 620), Theme.PanelBackground);
@@ -22,6 +35,18 @@ namespace ReleaseTheArrow.UI
             UIFactory.AddVerticalLayout(panel.gameObject, spacing: 28, padding: new RectOffset(40, 60, 70, 70));
 
             PauseScreen.AddTitle(panel, "LEVEL COMPLETE!", 60);
+
+            var starRowGo = new GameObject("StarRow", typeof(RectTransform));
+            _starRow = (RectTransform)starRowGo.transform;
+            _starRow.SetParent(panel, false);
+            _starRow.sizeDelta = new Vector2(560, 100);
+            UIFactory.SetPreferredSize(starRowGo, _starRow.sizeDelta);
+            UIFactory.AddHorizontalLayout(starRowGo, spacing: 20);
+            for (int i = 0; i < 3; i++)
+            {
+                var star = UIFactory.CreateIcon(_starRow, IconSpriteFactory.Star(), new Vector2(80, 80), Theme.StarEmpty);
+                _starImages.Add(star);
+            }
 
             var subGo = new GameObject("Subtitle", typeof(RectTransform));
             var subRect = (RectTransform)subGo.transform;
