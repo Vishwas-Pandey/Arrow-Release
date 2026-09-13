@@ -1,6 +1,6 @@
 # Privacy Policy — Release the Arrow
 
-*Last updated: [fill in date before publishing]*
+*Last updated: September 13, 2026*
 
 Virevia ("we," "us") developed Release the Arrow (the "Game"). This policy
 explains what data the Game collects and how it's used.
@@ -51,7 +51,7 @@ after an update means you accept the revised policy.
 
 ## Contact
 
-Questions about this policy: [add a support email you monitor]
+Questions about this policy: workwithvishwaspandey@gmail.com
 
 ---
 

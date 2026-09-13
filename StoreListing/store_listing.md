@@ -56,11 +56,11 @@ Games > Puzzle
 ## Tags / keywords (for reference, not a Play Console field)
 puzzle, arrow, casual, brain teaser, logic, offline puzzle, tap puzzle
 
-## Contact details (fill in before submitting)
+## Contact details
 - Developer name: Virevia
-- Support email: (add an email you monitor)
+- Support email: workwithvishwaspandey@gmail.com
 - Website: (optional)
-- Privacy policy URL: (host `privacy_policy.md` below and paste that URL here — required)
+- Privacy policy URL: https://vishwas-pandey.github.io/Arrow-Release/ (hosted via GitHub Pages from this repo's `docs/` folder)
 
 ## Graphic assets (already generated, in Assets/_Project/Icons/)
 - App icon: `AppIcon.png` (1024x1024) — already assigned in Player Settings
