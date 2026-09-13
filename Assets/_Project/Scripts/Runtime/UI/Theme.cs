@@ -39,5 +39,13 @@ namespace ReleaseTheArrow.UI
 
         public static readonly Color StarFull = new Color32(0xFF, 0xC8, 0x5C, 0xFF);
         public static readonly Color StarEmpty = new Color32(0x3A, 0x3F, 0x5C, 0xFF);
+
+        // Main menu now sits over photographic art (see MainMenuScreen) rather than the flat
+        // navy background — these read well against a warm sunset photo where the standard
+        // ButtonBackground/TextPrimary pair would clash.
+        public static readonly Color MenuPillPrimary = new Color32(0x22, 0x2E, 0x24, 0xD9);
+        public static readonly Color MenuPillSecondary = new Color32(0x1A, 0x1C, 0x22, 0xB8);
+        public static readonly Color MenuCreamText = new Color32(0xF3, 0xE9, 0xD3, 0xFF);
+        public static readonly Color MenuIconGlyph = new Color32(0xF3, 0xE9, 0xD3, 0xE6);
     }
 }

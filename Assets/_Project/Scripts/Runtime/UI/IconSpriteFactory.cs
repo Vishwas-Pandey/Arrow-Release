@@ -18,6 +18,48 @@ namespace ReleaseTheArrow.UI
         public static Sprite Pause() => GetOrBuild("pause", IsInsidePause);
         public static Sprite Dot() => GetOrBuild("dot", IsInsideDot);
         public static Sprite Star() => GetOrBuild("star", IsInsideStar);
+        public static Sprite Gear() => GetOrBuild("gear", IsInsideGear);
+        public static Sprite BarChart() => GetOrBuild("barchart", IsInsideBarChart);
+
+        private static Sprite _roundedRect;
+
+        /// A 9-sliced rounded-rectangle/pill background, used for buttons that sit over
+        /// photographic art where the flat rectangular Theme.ButtonBackground look would clash.
+        /// The border keeps corners round at any final button size (Image.type must be set to
+        /// Sliced by the caller — Sprite.Create alone doesn't do that).
+        public static Sprite RoundedRect()
+        {
+            if (_roundedRect != null) return _roundedRect;
+
+            const int size = 64;
+            const float radius = 22f;
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
+            {
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp
+            };
+            const float half = size / 2f;
+            var pixels = new Color32[size * size];
+            for (int py = 0; py < size; py++)
+            {
+                for (int px = 0; px < size; px++)
+                {
+                    float x = px + 0.5f, y = py + 0.5f;
+                    float qx = Mathf.Max(Mathf.Abs(x - half) - (half - radius), 0f);
+                    float qy = Mathf.Max(Mathf.Abs(y - half) - (half - radius), 0f);
+                    float signedDist = Mathf.Sqrt(qx * qx + qy * qy) - radius;
+                    float alpha = Mathf.Clamp01(0.5f - signedDist);
+                    pixels[py * size + px] = new Color(1f, 1f, 1f, alpha);
+                }
+            }
+            texture.SetPixels32(pixels);
+            texture.Apply();
+
+            int border = (int)radius;
+            _roundedRect = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size,
+                0, SpriteMeshType.FullRect, new Vector4(border, border, border, border));
+            return _roundedRect;
+        }
 
         private static Sprite GetOrBuild(string key, System.Func<float, float, bool> shape)
         {
@@ -104,6 +146,28 @@ namespace ReleaseTheArrow.UI
         }
 
         private static bool IsInsideStar(float x, float y) => PointInPolygon(x, y, StarPoints);
+
+        private static bool IsInsideGear(float x, float y)
+        {
+            float dist = Mathf.Sqrt(x * x + y * y);
+            if (dist <= 0.14f) return false; // center hole
+            if (dist <= 0.24f) return true; // hub ring
+            if (dist > 0.40f) return false;
+            // 8 teeth as angular spokes around the outer ring.
+            float angle = Mathf.Atan2(y, x);
+            float slice = (angle + Mathf.PI * 2f) % (Mathf.PI / 4f);
+            return slice < (Mathf.PI / 4f) * 0.55f;
+        }
+
+        private static bool IsInsideBarChart(float x, float y)
+        {
+            if (x < -0.38f || x > 0.38f || y < -0.34f || y > 0.34f) return false;
+            // Three ascending bars, baseline at the bottom of the icon.
+            if (x >= -0.38f && x <= -0.16f) return y <= -0.34f + 0.42f;
+            if (x >= -0.09f && x <= 0.13f) return y <= -0.34f + 0.62f;
+            if (x >= 0.20f && x <= 0.38f) return y <= -0.34f + 0.86f;
+            return false;
+        }
 
         private static bool PointInPolygon(float px, float py, Vector2[] poly)
         {
