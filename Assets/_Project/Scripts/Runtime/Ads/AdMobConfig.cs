@@ -7,7 +7,7 @@ namespace ReleaseTheArrow.Ads
     /// this app's ad units exist there, but never commit real IDs alongside useTestAds left on.
     public static class AdMobConfig
     {
-        public const bool UseTestAds = true;
+        public const bool UseTestAds = false;
 
         public const string TestAppId = "ca-app-pub-3940256099942544~3347511713";
         public const string TestBannerId = "ca-app-pub-3940256099942544/6300978111";
