@@ -60,7 +60,7 @@ puzzle, arrow, casual, brain teaser, logic, offline puzzle, tap puzzle
 
 ## Contact details
 - Developer name: Virevia
-- Support email: workwithvishwaspandey@gmail.com
+- Support email: problem.virevia@gmail.com
 - Website: (optional)
 - Privacy policy URL: https://vishwas-pandey.github.io/Arrow-Release/ (hosted via GitHub Pages from this repo's `docs/` folder)
 

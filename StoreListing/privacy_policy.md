@@ -51,7 +51,7 @@ after an update means you accept the revised policy.
 
 ## Contact
 
-Questions about this policy: workwithvishwaspandey@gmail.com
+Questions about this policy: problem.virevia@gmail.com
 
 ---
 
